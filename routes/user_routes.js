@@ -1,6 +1,23 @@
 const express = require("express");
 const User = require("../database/models/user");
+const { isAutheticated } = require("./middleware/auth_middleware");
 const router = express.Router();
+
+router.get("/profile", isAutheticated, (req, res) => {
+  res.json(req.session.user);
+});
+
+router.get("/logout", isAutheticated, (req, res) => {
+  req.session.user = null;
+  req.session.save((err) => {
+    if (err) {
+      console.log(err);
+      res.status(400).json({ error: err });
+      return;
+    }
+    res.json();
+  });
+});
 
 router.post("/login", async (req, res) => {
   const email = req.body.email;
@@ -21,7 +38,22 @@ router.post("/login", async (req, res) => {
     return;
   }
   console.log([req.body, findUser]);
-  res.json(findUser);
+  req.session.regenerate((err) => {
+    if (err) {
+      console.log(err);
+      res.status(400).json({ error: err });
+      return;
+    }
+    req.session.user = findUser;
+    req.session.save((err) => {
+      if (err) {
+        console.log(err);
+        res.status(400).json({ error: err });
+        return;
+      }
+      res.json(findUser);
+    });
+  });
 });
 
 router.post("/registration", async (req, res) => {
@@ -51,11 +83,37 @@ router.post("/registration", async (req, res) => {
     email: email,
     password: password,
   })
-    .then((newUser) => res.json(newUser))
+    .then((newUser) => {
+      req.session.regenerate((err) => {
+        if (err) {
+          console.log(err);
+          res.status(400).json({ error: err });
+          return;
+        }
+        req.session.user = newUser;
+        req.session.save((err) => {
+          if (err) {
+            console.log(err);
+            res.status(400).json({ error: err });
+            return;
+          }
+          res.json(newUser);
+        });
+      });
+    })
     .catch((err) => {
       console.log(err);
       res.status(400).json(["unable to save to database;" + err]);
     });
+});
+
+router.get("/delete-account", isAutheticated, (req, res) => {
+  User.findByIdAndRemove(req.session.user._id, (err) => {
+    if (err) {
+      return res.redirect("/");
+    }
+    return res.redirect("/");
+  });
 });
 
 function handleValidationLogin(email, password) {
