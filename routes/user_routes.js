@@ -1,5 +1,6 @@
 const express = require("express");
 const User = require("../database/models/user");
+const { catchErrors } = require("../utils/catch_errors");
 const { isAutheticated } = require("./middleware/auth_middleware");
 const router = express.Router();
 
@@ -10,12 +11,8 @@ router.get("/profile", isAutheticated, (req, res) => {
 router.get("/logout", isAutheticated, (req, res) => {
   req.session.user = null;
   req.session.save((err) => {
-    if (err) {
-      console.log(err);
-      res.status(400).json({ error: err });
-      return;
-    }
-    res.json();
+    if (err) return catchErrors(res, err);
+    res.redirect("/");
   });
 });
 
@@ -24,33 +21,20 @@ router.post("/login", async (req, res) => {
   const password = req.body.password;
 
   const errors = handleValidationLogin(email, password);
-  if (errors.length > 0) {
-    console.log(errors);
-    res.status(400).json({ error: errors });
-    return;
-  }
+  if (errors.length > 0) return catchErrors(res, err);
   const findUser = await User.findOne({
     email: email,
     password: password,
   }).exec();
   if (findUser == null) {
-    res.status(400).json({ error: "Your email or password is invalid." });
-    return;
+    return catchErrors(res, "Your email or password is invalid.");
   }
   console.log([req.body, findUser]);
   req.session.regenerate((err) => {
-    if (err) {
-      console.log(err);
-      res.status(400).json({ error: err });
-      return;
-    }
+    if (err) return catchErrors(res, err);
     req.session.user = findUser;
     req.session.save((err) => {
-      if (err) {
-        console.log(err);
-        res.status(400).json({ error: err });
-        return;
-      }
+      if (err) return catchErrors(res, err);
       res.json(findUser);
     });
   });
@@ -63,19 +47,13 @@ router.post("/registration", async (req, res) => {
   const password = req.body.password;
 
   const errors = handleValidationRegistration(name, email, password);
-  if (errors.length > 0) {
-    console.log(errors);
-    res.status(400).json({ error: errors });
-    return;
-  }
+  if (errors.length > 0) return catchErrors(res, errors);
 
   const findUser = await User.findOne({
     email: email,
   }).exec();
   if (findUser != null) {
-    console.log(findUser);
-    res.status(400).json({ error: "This user already exists." });
-    return;
+    return catchErrors(res, "This user already exists.");
   }
 
   User.create({
@@ -85,34 +63,26 @@ router.post("/registration", async (req, res) => {
   })
     .then((newUser) => {
       req.session.regenerate((err) => {
-        if (err) {
-          console.log(err);
-          res.status(400).json({ error: err });
-          return;
-        }
+        if (err) return catchErrors(res, err);
         req.session.user = newUser;
         req.session.save((err) => {
-          if (err) {
-            console.log(err);
-            res.status(400).json({ error: err });
-            return;
-          }
+          if (err) return catchErrors(res, err);
           res.json(newUser);
         });
       });
     })
-    .catch((err) => {
-      console.log(err);
-      res.status(400).json(["unable to save to database;" + err]);
-    });
+    .catch((err) => catchErrors(res, err));
 });
 
 router.get("/delete-account", isAutheticated, (req, res) => {
   User.findByIdAndRemove(req.session.user._id, (err) => {
-    if (err) {
-      return res.redirect("/");
-    }
-    return res.redirect("/");
+    if (err) return catchErrors(res, err);
+
+    req.session.user = null;
+    req.session.save((err) => {
+      if (err) return catchErrors(res, err);
+      res.redirect("/");
+    });
   });
 });
 

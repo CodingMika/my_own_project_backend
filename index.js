@@ -1,6 +1,6 @@
 const express = require("express");
 const { userRoutes } = require("./routes/user_routes");
-const port = 8080;
+const port = 8000;
 const app = express();
 const bodyParser = require("body-parser");
 const session = require("express-session");
