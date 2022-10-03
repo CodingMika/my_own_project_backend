@@ -1,4 +1,6 @@
+const { catchRedirect } = require("../../utils/catch_errors");
+
 module.exports.isAutheticated = (req, res, next) => {
   if (req.session.user) return next();
-  res.status(401).json();
+  catchRedirect(res, "notAuth", "/login");
 };
