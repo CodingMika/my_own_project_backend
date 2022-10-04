@@ -7,6 +7,7 @@ const session = require("express-session");
 const DB = require("./database/client");
 const { authRoutes } = require("./routes/auth_routes");
 const fileUpload = require("express-fileupload");
+const { addRoutes } = require("./routes/add_routes");
 
 DB.init();
 
@@ -30,7 +31,7 @@ app.get("/", (req, res) => {
   res.send("Hello, World!");
 });
 
-app.use("/api", [authRoutes, userRoutes]);
+app.use("/api", [authRoutes, userRoutes, addRoutes]);
 
 app.listen(port, () => {
   console.log(`Server started on ${port}!`);

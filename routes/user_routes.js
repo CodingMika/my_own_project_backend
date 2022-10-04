@@ -23,11 +23,16 @@ router.post("/edit-profile", isAutheticated, async (req, res) => {
 
   const updateData = createUpdateData(name, city, phoneNumber, email);
   if (Object.keys(updateData).length == 0)
-    return catchRedirect(
-      res,
-      "Our world is as empty as my cup of coffee.",
-      "/profile"
-    );
+    return catchRedirect(res, "Please, provide some information.", "/profile");
+
+  if (updateData.email != null) {
+    const findUser = await User.findOne({
+      email: updateData.email,
+    }).exec();
+    if (findUser != null) {
+      return catchRedirect(res, "This user already exists.", "/edit-profile");
+    }
+  }
 
   if (image != null) {
     let fileName = image.name.split(".");
