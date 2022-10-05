@@ -6,31 +6,45 @@ const router = express.Router();
 const fs = require("fs");
 const path = require("path");
 const { randomUUID } = require("crypto");
+const User = require("../database/models/user");
 
 router.post("/add", (req, res) => {
   const addId = req.body.addId;
   if (addId == null) {
     return catchErrors(res, "There is no such add.");
   }
-  Add.findById(addId, null, (err, add) => {
+  Add.findById(addId).exec((err, add) => {
     if (err) return catchErrors(res, err);
-    res.json(add);
+    User.findById(add.userId).exec((err, user) => {
+      if (err) return catchErrors(res, err);
+      res.json({
+        ...add._doc,
+        user: {
+          ...user._doc,
+          password: undefined,
+          phoneNumber: undefined,
+        },
+      });
+    });
   });
 });
 
-router.post("/adds", async (req, res) => {
+router.post("/adds", (req, res) => {
+  console.log(req.body);
   const userId = req.body.userId;
   const limit = req.body.limit;
   const page = req.body.page;
   let filterData = {};
-  if (userId != null || userId != "") {
-    filterData.userId = userId;
+  if (userId != null && userId != "") {
+    filterData = { userId: userId };
   }
   let findProcess = Add.find(filterData);
-  if (page != null) findProcess = findProcess.skip(page * (limit ?? 10));
+  if (page != null) findProcess = findProcess.skip((page - 1) * (limit ?? 10));
   if (limit != null) findProcess = findProcess.limit(limit);
-  const findAdds = await findProcess.exec();
-  res.json(findAdds);
+  findProcess.exec((err, list) => {
+    if (err) return catchErrors(res, err);
+    res.json(list);
+  });
 });
 
 router.post("/make-add", isAutheticated, async (req, res) => {
