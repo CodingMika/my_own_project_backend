@@ -14,6 +14,9 @@ router.post("/add", (req, res) => {
     return catchErrors(res, "There is no such add.");
   }
   Add.findById(addId).exec((err, add) => {
+    if (add == null) {
+      return catchErrors(res, "There is no such add.");
+    }
     if (err) return catchErrors(res, err);
     User.findById(add.userId).exec((err, user) => {
       if (err) return catchErrors(res, err);
@@ -58,7 +61,7 @@ router.post("/make-add", isAutheticated, async (req, res) => {
     return catchRedirect(res, "Please, add anpicture", "/make-add");
   }
 
-  const addData = createAddData(city, title, description);
+  const addData = createAddData(title, city, description);
   if (Object.keys(addData).length == 0)
     return catchRedirect(res, "Please, provide some information.", "/add");
 

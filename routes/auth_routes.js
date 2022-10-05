@@ -8,9 +8,9 @@ router.get("/logout", isAutheticated, (req, res) => {
   req.session.user = null;
   req.session.save((err) => {
     console.log(err);
+    res.redirect("/");
     //if (err) return catchErrors(res, err);
   });
-  res.redirect("/");
 });
 
 router.post("/login", async (req, res) => {
